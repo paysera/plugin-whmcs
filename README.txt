@@ -1,12 +1,3 @@
-plugin-whmcs
-============
-
-**WHMCS v5**
-
-Paysera plugin for WHMCS
-
-**Version of specification: 1.6**
-
 Installation
 ------------
 
@@ -17,5 +8,4 @@ Note: all fields are required
 
 Contacts
 --------
-
 If any problems occur please feel free to seek help via support@webtopay.com
