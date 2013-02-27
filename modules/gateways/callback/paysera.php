@@ -13,12 +13,7 @@ $GATEWAY = getGatewayVariables($gatewaymodule);
 if (!$GATEWAY["type"])
 	die("Module Not Activated");
 
-//Admin username for API
-if (!$GATEWAY["adminusername"]) {
-	die("Admin login name not set");
-} else {
-	$adminusername = $GATEWAY["adminusername"];
-}
+
 
 try {
 	$response = WebToPay::checkResponse($_REQUEST, array(
@@ -39,6 +34,13 @@ try {
 		header("Location: " . $redirectURL);
 
 	} else {
+
+		//Admin username for API
+		if (!$GATEWAY["adminusername"]) {
+		die("Admin login name not set");
+		} else {
+		$adminusername = $GATEWAY["adminusername"];
+		}
 
 		$orderAmount = '';
 		$result = mysql_query("SELECT total FROM tblinvoices WHERE id = " . $orderid);
