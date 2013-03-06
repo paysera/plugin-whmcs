@@ -9,4 +9,10 @@ Pastaba: visi laukai privalomi
 
 Kontaktai
 ---------
+
 Kilus klausymams kreipkites i pagalba@mokejimai.lt
+
+Fix
+---
+
+2013.03.06 Fixed webtopay exception when paying via printed invoices

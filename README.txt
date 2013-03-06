@@ -8,4 +8,10 @@ Note: all fields are required
 
 Contacts
 --------
+
 If any problems occur please feel free to seek help via support@webtopay.com
+
+Fix
+---
+
+2013.03.06 Fixed webtopay exception when paying via printed invoices
