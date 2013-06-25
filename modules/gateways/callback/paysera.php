@@ -1,14 +1,14 @@
 <?php
 
-include ("../../../dbconnect.php");
-include ("../../../includes/functions.php");
-include ("../../../includes/gatewayfunctions.php");
-include ("../../../includes/invoicefunctions.php");
+include("../../../dbconnect.php");
+include("../../../includes/functions.php");
+include("../../../includes/gatewayfunctions.php");
+include("../../../includes/invoicefunctions.php");
 
-require_once ('../libwebtopay/WebToPay.php');
+require_once('../vendor/webtopay/libwebtopay/WebToPay.php');
 
 $gatewaymodule = "paysera";
-$GATEWAY = getGatewayVariables($gatewaymodule);
+$GATEWAY       = getGatewayVariables($gatewaymodule);
 
 if (!$GATEWAY["type"])
     die("Module Not Activated");
@@ -16,15 +16,13 @@ if (!$GATEWAY["type"])
 try {
     $response = WebToPay::validateAndParseData($_REQUEST, $GATEWAY['projectID'], $GATEWAY['projectPass']);
 
-    $orderid = mysql_escape_string($response['orderid']);
+    $orderid   = intval(mysql_real_escape_string($response['orderid']));
     $invoiceid = checkCbInvoiceID($orderid, $GATEWAY["paysera"]);
 
     if (isset($_REQUEST['accepturl'])) {
         $invoiceid = checkCbInvoiceID($orderid, $GATEWAY["paysera"]);
         logTransaction($GATEWAY["name"], $_REQUEST, "Successful");
-        addInvoicePayment($invoiceid, null, null, null, $gatewaymodule);
-        $redirectURL = $GATEWAY['systemurl'] . '/viewinvoice.php?id=' . $invoiceid;
-        header("Location: " . $redirectURL);
+        header("Location: " . '/clientarea.php?action=invoices');
     } else {
 
         //Admin username for API
@@ -35,12 +33,12 @@ try {
         }
 
         $orderAmount = '';
-        $result = mysql_query("SELECT total FROM tblinvoices WHERE id = " . $orderid);
+        $result      = mysql_query("SELECT total FROM tblinvoices WHERE id = " . $orderid);
         $orderAmount = mysql_result($result, 0);
 
         if (isset($GATEWAY['convertto'])) {
             $result = mysql_query("SELECT rate FROM tblcurrencies WHERE code = '" . $response['currency'] . "'");
-            $rate = '';
+            $rate   = '';
             while ($row = mysql_fetch_array($result)) {
                 $rate = $row['rate'];
             }
@@ -49,7 +47,7 @@ try {
         if ($response['status'] == 1) {
 
             //Check amount
-            if (round($orderAmount * 100) > $response['amount']) {
+            if (intval(number_format($orderAmount, 2, '', '')) > $response['amount']) {
                 logTransaction($GATEWAY["paymentmethod"], $_REQUEST, "[CALLBACK]Unsuccessful, bad amount");
                 exit('Bad amount!');
             }
@@ -64,7 +62,7 @@ try {
             while ($result = mysql_fetch_array($query)) {
                 if ($result['status'] == 'Pending') {
 
-                    $value['status'] = "Paid";
+                    $value['status']    = "Paid";
                     $value['invoiceid'] = $orderid;
                     localAPI("updateinvoice", $value, $adminusername);
 
@@ -76,8 +74,10 @@ try {
                         mysql_query("UPDATE tblinvoiceitems SET amount = '0.00' WHERE invoiceid = " . $result['relid']);
                         $value['invoiceid'] = $result['relid'];
                         localAPI("updateinvoice", $value, $adminusername);
+                        logTransaction($GATEWAY["name"], $_REQUEST, "[CALLBACK]Successful");
                     } else {
                         mysql_query("UPDATE tblorders SET status = 'Processed' WHERE invoiceid = " . $orderid);
+                        logTransaction($GATEWAY["name"], $_REQUEST, "[CALLBACK]Successful");
                     }
                 } else {
                     exit("OK");
@@ -86,11 +86,11 @@ try {
         }
 
     }
-    logTransaction($GATEWAY["name"], $_REQUEST, "[CALLBACK]Successful");
+
     exit('OK');
 } catch (Exception $e) {
     logTransaction($GATEWAY["name"], $_REQUEST, "[CALLBACK]Unsuccessful");
-    exit(get_class($e) . ': ' . $e -> getMessage());
+    exit(get_class($e) . ': ' . $e->getMessage());
 }
 
 function d($d) {

@@ -1,18 +1,13 @@
 Diegimas
---------
+
 
 1. Isarchyvuokite kataloga "modules" i WHMCS kataloga.
 2. Administracijos paneleje eikite i Setup>Other>Order Statuses ir pridekite nauja statusa su pavadinimu "Processed" ir "Include in Pending" varnele. 
 Sis statusas bus naudojamas kaip apmoketa bet dar neaktyvuota.
 3. Administracijos paneleje eikite i Setup>Payments>Payment Gateways, aktyvuokite moduli Paysera.com/Mokejimai.lt ir uzpildykite visa informacija. 
-Pastaba: visi laukai privalomi
+Pastaba: visi laukai privalomi.
+4. Imoku surinkimo paslaugos nustatymuose projekte uzdekite varnele "Peradresuoti klientus i accepturl nuorda tik gavus apmokejimo patvirtinima".
 
 Kontaktai
----------
 
-Kilus klausymams kreipkites i pagalba@mokejimai.lt
-
-Fix
----
-
-2013.03.06 Fixed webtopay exception when paying via printed invoices
+Kilus klausimams prasome kreiptis i pagalba@mokejimai.lt
