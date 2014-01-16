@@ -62,13 +62,10 @@ try {
 
 
  
-$query = "SELECT * from tblorders where invoiceid =".$orderid;
+            $query = "SELECT * from tblorders where invoiceid =".$orderid;
 
-$resultas = mysql_query($query);
-            while ($result = mysql_fetch_array($resultas)) { 
-
-
-
+            $orders_result = mysql_query($query);
+            while ($result = mysql_fetch_array($orders_result)) {
 
                 if ($result['status'] == 'Pending') {
 
@@ -88,60 +85,51 @@ $resultas = mysql_query($query);
                         logTransaction($GATEWAY["name"], $_REQUEST, "[CALLBACK]Successful");
                     } else {
                         mysql_query("UPDATE tblorders SET status = 'Processed' WHERE invoiceid = " . $orderid);
-			mysql_query("UPDATE tblinvoices SET status = 'Paid', `datepaid` = '".date("Y-m-d H:i:s")."' WHERE id = " . $orderid); 
-	                 addInvoicePayment($orderid,$result['ordernum'],$result['amount'],0,$gatewaymodule);
-	                logTransaction($GATEWAY["name"],$_POST,"Successful");
+			            mysql_query("UPDATE tblinvoices SET status = 'Paid', `datepaid` = '".date("Y-m-d H:i:s")."' WHERE id = " . $orderid);
+	                    addInvoicePayment($orderid,$result['ordernum'],$result['amount'],0,$gatewaymodule);
+	                    logTransaction($GATEWAY["name"],$_POST,"Successful");
 
 
-	$result = select_query("tblinvoiceitems", "", array("invoiceid" => $orderid, "type" => "Hosting"));
-	$data = mysql_fetch_array($result); //print_r($data); die;
-	$relid = $data["relid"];
-        $datos = array('Monthly'=> 1, 'Quarterly' => 3, 'Semi-Annually' => 6, 'Annually' => 12, 'Biennially'=> 24, 'Triennially' => 36);
+	                    $result = select_query("tblinvoiceitems", "", array("invoiceid" => $orderid, "type" => "Hosting"));
+	                    $data = mysql_fetch_array($result);
+	                    $relid = $data["relid"];
+                        $term = array('Monthly'=> 1, 'Quarterly' => 3, 'Semi-Annually' => 6, 'Annually' => 12, 'Biennially'=> 24, 'Triennially' => 36);
 
-if($data){
-	$result2 = select_query("tblorders", "", array("invoiceid" => $orderid));
-	$data2 = mysql_fetch_array($result2); 
+                        if($data){
+                            $result2 = select_query("tblorders", "", array("invoiceid" => $orderid));
+                            $data2 = mysql_fetch_array($result2);
 
-	$result3 = select_query("tblhosting", "", array("orderid" => $data2["id"]));
-	$data3 = mysql_fetch_array($result3);
+                            $result3 = select_query("tblhosting", "", array("orderid" => $data2["id"]));
+                            $data3 = mysql_fetch_array($result3);
 
-/*echo $data2["id"]."UPDATE tblhosting SET `nextduedate` = '".date("Y-m-d H:i:s", strtotime($data3['regdate'].'+'.$datos[$data3['billingcycle']].' month'))."',
-`nextinvoicedate` = '".date("Y-m-d H:i:s", (strtotime($data3['regdate'].'+'.$datos[$data3['billingcycle']].' month') - (5*24*60*60)))."' WHERE orderid = " . $orderid;
-*/
-	mysql_query("UPDATE tblhosting SET `nextduedate` = '".date("Y-m-d H:i:s", strtotime($data3['regdate'].'+'.$datos[$data3['billingcycle']].' month'))."',
-`nextinvoicedate` = '".date("Y-m-d H:i:s", (strtotime($data3['regdate'].'+'.$datos[$data3['billingcycle']].' month') - (5*24*60*60)))."' WHERE orderid = " . $data2["id"]); 
 
- $values["accountid"] = $data3['id'];
+                            mysql_query("UPDATE tblhosting SET `nextduedate` = '".date("Y-m-d H:i:s", strtotime($data3['regdate'].'+'.$term[$data3['billingcycle']].' month'))."',
+                        `nextinvoicedate` = '".date("Y-m-d H:i:s", (strtotime($data3['regdate'].'+'.$term[$data3['billingcycle']].' month') - (5*24*60*60)))."' WHERE orderid = " . $data2["id"]);
 
- $results = localAPI("modulecreate" ,$values ,$adminusername); exit("OK");
-}
+                            $values["accountid"] = $data3['id'];
+
+                            $results = localAPI("modulecreate" ,$values ,$adminusername); exit("OK");
+                        }
 
 
 
-	$result = select_query("tblinvoiceitems", "", array("invoiceid" => $orderid, "type" => "DomainRegister"));
-	$data = mysql_fetch_array($result); //print_r($data); die;
-	$relid = $data["relid"];
+	                    $result = select_query("tblinvoiceitems", "", array("invoiceid" => $orderid, "type" => "DomainRegister"));
+	                    $data = mysql_fetch_array($result); //print_r($data); die;
+	                    $relid = $data["relid"];
 
 
-if($data){ 
- mysql_query("UPDATE tbldomains SET registrar = 'resellerclub' WHERE id = " . $relid); 
- $values["domainid"] = $relid;
+                        if($data){
+                            mysql_query("UPDATE tbldomains SET registrar = 'resellerclub' WHERE id = " . $relid);
+                            $values["domainid"] = $relid;
 
- $results = localAPI("domainregister" ,$values ,$adminusername);  exit("OK");
+                            $results = localAPI("domainregister" ,$values ,$adminusername);  exit("OK");
 
- mysql_query("update `tbldomains` set `nextduedate` = `expirydate`, `nextinvoicedate` = `expirydate` where id = " . $relid); 
-}
-
+                            mysql_query("update `tbldomains` set `nextduedate` = `expirydate`, `nextinvoicedate` = `expirydate` where id = " . $relid);
+                        }
 
 
 
 
-
-
-
-
-//	mysql_query("UPDATE tblhosting SET domainstatus = 'Active' WHERE orderid = " . $data2["id"]); 
-//update_query("tblhosting", array("domainstatus" => 'Active'), array("orderid" => $data2["id"]));
                         logTransaction($GATEWAY["name"], $_REQUEST, "[CALLBACK]Successful");
                     }
                 } else {
