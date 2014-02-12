@@ -14,7 +14,7 @@ function paysera_config() {
 }
 
 function paysera_link($params) {
-
+if(!$params['clientdetails']['email']){ return ''; }
     $URL = array();
 
     $URL['accept']   = $params['systemurl'] . '/modules/gateways/callback/paysera.php?accepturl=1';
