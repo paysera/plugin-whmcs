@@ -1,68 +1,102 @@
 <?php
 
-include("../../../dbconnect.php");
-include("../../../includes/functions.php");
-include("../../../includes/gatewayfunctions.php");
-include("../../../includes/invoicefunctions.php");
+require '../../../dbconnect.php';
+require '../../../includes/functions.php';
+require '../../../includes/gatewayfunctions.php';
+require '../../../includes/invoicefunctions.php';
+require '../vendor/webtopay/WebToPay.php';
 
-require_once "../vendor/webtopay/WebToPay.php";
+$gatewaymodule = 'paysera';
+$gateway = getGatewayVariables($gatewaymodule);
 
-$gatewaymodule = "paysera";
-$GATEWAY = getGatewayVariables( $gatewaymodule );
+function _log($msg, $data = null) {
+    global $gateway;
+    logTransaction($gateway['name'], var_export($data, true), $msg);
+}
 
-if ( ! $GATEWAY["type"] ) die("Module Not Activated");
+if (!$gateway['type']) {
+    echo 'Module Not Activated';
+    exit;
+}
 
-function _log( $msg, $data = null ) {
-    logTransaction( $GATEWAY["name"], var_export( $data, true ), $msg );
+// Workaround to a bug on some PHP runtimes, when `data` parameter gets
+// missing from $_GET due to its length
+if (!isset($_GET['data'])) {
+    $query = htmlspecialchars_decode($_SERVER['QUERY_STRING']);
+    parse_str($query, $_GET);
 }
 
 try {
 
-    $response = WebToPay::validateAndParseData( $_REQUEST, $GATEWAY['projectID'], $GATEWAY['projectPass'] );
-    $orderid = intval( mysql_real_escape_string( $response['orderid'] ) );
-    $invoiceid = checkCbInvoiceID( $orderid, $GATEWAY["paysera"] );
-    $transid = $response["requestid"];
-    $amount = $response["amount"] / 100;
+    $res = WebToPay::checkResponse($_GET, array(
+        'projectid' => $gateway['projectID'],
+        'sign_password' => $gateway['projectPass'],
+    ));
+
+    $orderid = intval(mysql_real_escape_string($res['orderid']));
+    $invoiceid = checkCbInvoiceID($orderid, $gateway['paysera']);
+    $transid = $res['requestid'];
+    $amount = $res['amount'] / 100;
 
     // Check if we want to redirect user to the invoice
-    if ( isset( $_REQUEST['accepturl'] ) ) {
-        header( "Location: /viewinvoice.php?id=" . $invoiceid );
+    if (isset($_REQUEST['accepturl'])) {
+        if (!empty($gateway['systemurl'])) {
+            header('Location: ' . $gateway['systemurl'] .
+                '/viewinvoice.php?id=' . $invoiceid);
+        } else {
+            header('Location: /viewinvoice.php?id=' . $invoiceid);
+        }
         exit;
     }
 
     // Convert currency
-    if ( isset( $GATEWAY['convertto'] ) ) {
-        $result = mysql_query("SELECT rate FROM tblcurrencies WHERE code = '" . $response['currency'] . "'");
-        while ( $row = mysql_fetch_array($result) ) $rate = $row['rate'];
+    if (isset($gateway['convertto'])) {
+        $result = mysql_query("
+            SELECT rate FROM tblcurrencies
+            WHERE code = '" . mysql_real_escape_string($res['currency']) . "'
+        ");
+        $rate = '';
+        while ($row = mysql_fetch_array($result)) {
+            $rate = $row['rate'];
+        }
         $amount *= $rate;
     }
 
-    $amount = number_format( $amount, 2, ".", "" );
+    // Formats amount in cent units to string with dot separator
+    $amount = number_format($amount, 2, '.', '');
 
-    // Check status is something other, than unpaid (0)
-    if ( $response["status"] > 0 ) {
-        if ( $amount <= 0 ) {
-            _log( "[Fail] Paid zero amount", $response );
-            exit;
-        }
-        if ( $response["status"] == 2 ) {
-            _log( "[Fail] Paid, but still processing", $response );
-            exit;
-        }
-        checkCbTransId( $transid ); // Check transid isn't in database, otherwise exit
-        addInvoicePayment( $invoiceid, $transid, $amount, 0, $gatewaymodule );
-        _log( "[Success] Paid", array( "amount" => $amount, "response" => $response ) );
-        exit("OK");
+    // Catch processing status
+    if ($res['status'] == 2) {
+        _log('[Fail] Paid, but still processing', $res);
+        exit;
     }
 
-    // Log failure if everything else fails
-    _log( "[Fail] Unpaid", $response );
-    exit;
+    // Catch all unpaid statuses
+    if ($res['status'] != 1) {
+        _log('[Fail] Unpaid', $res);
+        exit;
+    }
 
-} catch ( Exception $e ) {
-    _log( "[Error] Exception", array(
-        "exception" => get_class($e) . ": " . $e->getMessage(),
-        "request" => $_REQUEST
+    // Catch zero or negative amount
+    if ($amount <= 0) {
+        _log('[Fail] Paid zero amount', $res);
+        exit;
+    }
+
+    // Register payment
+    checkCbTransId($transid); // If finds a similar transaction, force quits
+    addInvoicePayment($invoiceid, $transid, $amount, 0, $gatewaymodule);
+    _log('[Success] Paid', array(
+        'amount' => $amount,
+        'response' => $res,
+    ));
+
+    echo 'OK';
+
+} catch (Exception $e) {
+    _log('[Error] Exception', array(
+        'exception' => get_class($e) . ": " . $e->getMessage(),
+        'request' => $_REQUEST,
     ));
     exit;
 }
