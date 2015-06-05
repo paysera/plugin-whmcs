@@ -1,6 +1,6 @@
 <?php
 
-require_once "vendor/webtopay/libwebtopay/WebToPay.php";
+require_once "vendor/webtopay/WebToPay.php";
 
 function paysera_config() {
     return array(

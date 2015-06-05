@@ -5,7 +5,7 @@ include("../../../includes/functions.php");
 include("../../../includes/gatewayfunctions.php");
 include("../../../includes/invoicefunctions.php");
 
-require_once "../vendor/webtopay/libwebtopay/WebToPay.php";
+require_once "../vendor/webtopay/WebToPay.php";
 
 $gatewaymodule = "paysera";
 $GATEWAY = getGatewayVariables( $gatewaymodule );
