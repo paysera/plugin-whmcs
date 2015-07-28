@@ -1,6 +1,6 @@
 <?php
 
-require '../../../dbconnect.php';
+require '../../../init.php';
 require '../../../includes/functions.php';
 require '../../../includes/gatewayfunctions.php';
 require '../../../includes/invoicefunctions.php';
@@ -100,3 +100,4 @@ try {
     ));
     exit;
 }
+

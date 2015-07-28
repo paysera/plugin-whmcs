@@ -6,7 +6,7 @@ Paysera.com payment gateway plugin for WHMCS
 Requirements
 ------------
 
-- WHMCS v5
+- WHMCS v6
 
 Installation
 ------------
